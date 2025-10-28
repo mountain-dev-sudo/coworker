@@ -1,0 +1,19 @@
+1. Clone the Repo
+------------------
+git clone https://github.com/YOUR_USERNAME/coworker.git
+cd coworker
+
+2. Backend Setup
+----------------
+
+cd backend
+
+# Install dependencies
+pip install -r requirements.txt
+
+3. Frontend Setup
+No package installation needed for now (HTML/CSS/jQuery are static files).
+We just open frontend/index.html in the browser after starting backend.
+
+4. Run the Backend
+uvicorn main:app --reload

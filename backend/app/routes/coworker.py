@@ -1,0 +1,38 @@
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from app.services.gemini_service import generate_text, generate_chat_response, summarize_document
+import logging
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+class PromptRequest(BaseModel):
+    prompt: str
+
+@router.get("/")
+def home():
+    return {"message": "Coworker API is running"}
+
+@router.post("/ask")
+def ask_coworker(data: PromptRequest):
+    try:
+        if not data.prompt.strip():
+            raise HTTPException(status_code=400, detail="Prompt cannot be empty")
+        
+        logger.info(f"Received request with prompt: {data.prompt[:50]}...")
+        result = generate_text(data.prompt)
+        
+        return {
+            "response": result,
+            "status": "success",
+            "prompt": data.prompt
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in ask_coworker: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.get("/health")
+def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "coworker"}

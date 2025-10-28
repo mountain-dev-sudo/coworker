@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coworker V1</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="light-mode">
+    <div class="app-container">
+      <!-- Left Panel (Sidebar) -->
+      <div class="sidebar" id="sidebar">
+        <!-- Header Section -->
+        <div class="sidebar-header">
+          <div class="logo-section">
+            <h2>Coworker V1</h2>
+          </div>
+          <button
+            class="collapse-btn"
+            id="collapseBtn"
+            aria-label="Toggle sidebar"
+          >
+            <i class="fas fa-bars"></i>
+          </button>
+        </div>
+
+        <!-- New Chat Button -->
+        <div class="new-chat-section">
+          <button class="new-chat-btn" id="newChatBtn">
+            <i class="fas fa-plus"></i>
+            <span class="btn-text">New Chat</span>
+          </button>
+        </div>
+
+        <!-- Chat List -->
+        <div class="chat-list-container">
+          <div class="chat-list" id="chatList">
+            <!-- Chat entries will be populated by JavaScript -->
+            <div class="chat-entry active" data-chat-id="1">
+              <div class="chat-preview">
+                <div class="chat-title">New Conversation</div>
+                <div class="chat-snippet">Start a conversation...</div>
+              </div>
+              <div class="chat-timestamp">Now</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Section -->
+        <div class="sidebar-footer">
+          <button class="footer-btn" id="themeToggle" aria-label="Toggle theme">
+            <i class="fas fa-moon"></i>
+            <span class="btn-text">Dark Mode</span>
+          </button>
+          <button
+            class="footer-btn"
+            id="clearAllBtn"
+            aria-label="Clear all chats"
+          >
+            <i class="fas fa-trash"></i>
+            <span class="btn-text">Clear All</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Overlay -->
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <!-- Right Panel (Main Chat Window) -->
+      <div class="main-chat-window">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <button
+            class="mobile-menu-btn"
+            id="mobileMenuBtn"
+            aria-label="Open sidebar"
+          >
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="chat-title-section">
+            <h3 id="activeChatTitle">New Conversation</h3>
+          </div>
+          <div class="chat-actions">
+            <button class="action-btn" id="shareBtn" aria-label="Share chat">
+              <i class="fas fa-share"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div class="chat-messages-container" id="chatMessagesContainer">
+          <div class="chat-messages" id="chatMessages">
+            <!-- Welcome message -->
+            <div class="welcome-message">
+              <div class="welcome-content">
+                <h2>Welcome to Coworker V1</h2>
+                <p>
+                  Your AI assistant is ready to help. Start a conversation by
+                  typing a message below.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loader (hidden by default) -->
+        <div class="loader-container hidden" id="loaderContainer">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span class="loader-text">AI is thinking...</span>
+        </div>
+
+        <!-- Input Bar -->
+        <div class="input-section">
+          <div class="input-container">
+            <div class="input-wrapper">
+              <textarea
+                id="messageInput"
+                placeholder="Ask anything..."
+                rows="1"
+                maxlength="2000"
+              ></textarea>
+              <div class="input-actions">
+                <button
+                  class="input-btn mic-btn"
+                  id="micBtn"
+                  aria-label="Voice input"
+                  disabled
+                >
+                  <i class="fas fa-microphone"></i>
+                </button>
+                <button
+                  class="input-btn send-btn"
+                  id="sendBtn"
+                  aria-label="Send message"
+                  disabled
+                >
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </div>
+            </div>
+            <div class="input-footer">
+              <span class="character-count" id="characterCount">0/2000</span>
+              <span class="disclaimer"
+                >Coworker V1 can make mistakes. Check important info.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+  </body>
+</html>
