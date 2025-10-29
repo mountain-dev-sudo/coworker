@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto-Playing Carousel</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #f5f5f5;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .carousel-wrapper {
+        width: 100%;
+        max-width: 1400px;
+        position: relative;
+      }
+
+      .carousel-container {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+        border-radius: 12px;
+      }
+
+      .custom-carousel {
+        display: flex;
+        gap: 20px;
+        transition: none;
+        will-change: transform;
+      }
+
+      .custom-carousel.animating {
+        transition: transform 0.5s ease;
+      }
+
+      .carousel-slide {
+        position: relative;
+        flex: 0 0 calc(80% - 20px);
+        min-width: calc(80% - 20px);
+        overflow: hidden;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
+      }
+
+      .carousel-slide:hover {
+        transform: scale(1.02);
+      }
+
+      .carousel-slide img {
+        width: 100%;
+        height: 500px;
+        object-fit: cover;
+        display: block;
+        border-radius: 12px;
+      }
+
+      .slide-btn {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 115, 230, 0.9);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        opacity: 0;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        cursor: pointer;
+        border: none;
+      }
+
+      .carousel-slide:hover .slide-btn {
+        opacity: 1;
+        bottom: 30px;
+      }
+
+      .slide-btn:hover {
+        background: rgba(0, 115, 230, 1);
+        transform: translateX(-50%) translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 115, 230, 0.4);
+      }
+
+      .side-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+      }
+
+      .side-btn:hover {
+        background: #fff;
+        transform: translateY(-50%) scale(1.1);
+      }
+
+      .side-btn.left {
+        left: 20px;
+      }
+
+      .side-btn.right {
+        right: 20px;
+      }
+
+      .side-btn svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      .carousel-controls {
+        position: absolute;
+        bottom: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .carousel-dots {
+        display: flex;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .dot.active {
+        background: #0073e6;
+        width: 24px;
+        border-radius: 4px;
+      }
+
+      @media (max-width: 768px) {
+        .carousel-slide {
+          flex: 0 0 calc(90% - 20px);
+          min-width: calc(90% - 20px);
+        }
+
+        .carousel-slide img {
+          height: 300px;
+        }
+
+        .side-btn {
+          width: 40px;
+          height: 40px;
+        }
+
+        .side-btn.left {
+          left: 10px;
+        }
+
+        .side-btn.right {
+          right: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="carousel-wrapper">
+      <div class="carousel-container">
+        <button
+          class="side-btn left"
+          id="sideLeftBtn"
+          aria-label="Previous slide"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="custom-carousel" id="carousel">
+          <!-- Slides will be dynamically cloned here -->
+        </div>
+
+        <button
+          class="side-btn right"
+          id="sideRightBtn"
+          aria-label="Next slide"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="carousel-controls">
+        <div class="carousel-dots" id="dots"></div>
+      </div>
+    </div>
+
+    <script>
+      const carousel = document.getElementById("carousel");
+      const dotsContainer = document.getElementById("dots");
+      const sideLeftBtn = document.getElementById("sideLeftBtn");
+      const sideRightBtn = document.getElementById("sideRightBtn");
+
+      // Original slides data
+      const slidesData = [
+        {
+          img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=600&fit=crop",
+          alt: "Slide 1",
+          btn: "Learn More",
+          link: "#service-1",
+        },
+        {
+          img: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=1200&h=600&fit=crop",
+          alt: "Slide 2",
+          btn: "Explore",
+          link: "#service-2",
+        },
+        {
+          img: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1200&h=600&fit=crop",
+          alt: "Slide 3",
+          btn: "Contact Us",
+          link: "#service-3",
+        },
+        {
+          img: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&h=600&fit=crop",
+          alt: "Slide 4",
+          btn: "Discover",
+          link: "#service-4",
+        },
+        {
+          img: "https://images.unsplash.com/photo-1537498425277-c283d32ef9db?w=1200&h=600&fit=crop",
+          alt: "Slide 5",
+          btn: "Get Started",
+          link: "#service-5",
+        },
+      ];
+
+      let currentIndex = 0;
+      let autoplayInterval;
+      let isHovered = false;
+      let isTransitioning = false;
+      const autoplaySpeed = 3000;
+
+      // Create slides with clones for infinite loop
+      function initCarousel() {
+        // Clone first and last slides for seamless loop
+        const firstClone = createSlide(slidesData[0]);
+        const lastClone = createSlide(slidesData[slidesData.length - 1]);
+
+        // Add last clone at the beginning
+        carousel.appendChild(lastClone);
+
+        // Add original slides
+        slidesData.forEach((data) => {
+          carousel.appendChild(createSlide(data));
+        });
+
+        // Add first clone at the end
+        carousel.appendChild(firstClone);
+
+        // Start at first real slide (index 1 because of the clone)
+        currentIndex = 1;
+        updateCarousel(false);
+      }
+
+      function createSlide(data) {
+        const slide = document.createElement("div");
+        slide.className = "carousel-slide";
+        slide.innerHTML = `
+        <img src="${data.img}" alt="${data.alt}" />
+        <a href="${data.link}" class="slide-btn">${data.btn}</a>
+      `;
+        return slide;
+      }
+
+      // Create dots (only for original slides)
+      slidesData.forEach((_, index) => {
+        const dot = document.createElement("div");
+        dot.classList.add("dot");
+        if (index === 0) dot.classList.add("active");
+        dot.addEventListener("click", () => goToSlide(index + 1)); // +1 for clone offset
+        dotsContainer.appendChild(dot);
+      });
+
+      const dots = dotsContainer.querySelectorAll(".dot");
+
+      function updateDots() {
+        const realIndex = currentIndex - 1; // Adjust for clone
+        dots.forEach((dot, index) => {
+          dot.classList.toggle("active", index === realIndex);
+        });
+      }
+
+      function updateCarousel(animate = true) {
+        const slideWidth =
+          carousel.querySelector(".carousel-slide").offsetWidth + 20;
+        const offset = -currentIndex * slideWidth;
+
+        if (animate) {
+          carousel.classList.add("animating");
+        } else {
+          carousel.classList.remove("animating");
+        }
+
+        carousel.style.transform = `translateX(${offset}px)`;
+        updateDots();
+      }
+
+      function goToSlide(index, animate = true) {
+        if (isTransitioning) return;
+        currentIndex = index;
+        updateCarousel(animate);
+      }
+
+      function nextSlide() {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        currentIndex++;
+        updateCarousel(true);
+
+        // Check if we're at the clone
+        if (currentIndex === slidesData.length + 1) {
+          setTimeout(() => {
+            currentIndex = 1;
+            updateCarousel(false);
+            isTransitioning = false;
+          }, 500);
+        } else {
+          setTimeout(() => {
+            isTransitioning = false;
+          }, 500);
+        }
+      }
+
+      function prevSlide() {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        currentIndex--;
+        updateCarousel(true);
+
+        // Check if we're at the clone
+        if (currentIndex === 0) {
+          setTimeout(() => {
+            currentIndex = slidesData.length;
+            updateCarousel(false);
+            isTransitioning = false;
+          }, 500);
+        } else {
+          setTimeout(() => {
+            isTransitioning = false;
+          }, 500);
+        }
+      }
+
+      function startAutoplay() {
+        if (!isHovered) {
+          autoplayInterval = setInterval(nextSlide, autoplaySpeed);
+        }
+      }
+
+      function stopAutoplay() {
+        clearInterval(autoplayInterval);
+      }
+
+      // Event listeners
+      sideLeftBtn.addEventListener("click", () => {
+        prevSlide();
+        stopAutoplay();
+        startAutoplay();
+      });
+
+      sideRightBtn.addEventListener("click", () => {
+        nextSlide();
+        stopAutoplay();
+        startAutoplay();
+      });
+
+      // Pause on hover
+      carousel.addEventListener("mouseenter", () => {
+        isHovered = true;
+        stopAutoplay();
+      });
+
+      carousel.addEventListener("mouseleave", () => {
+        isHovered = false;
+        startAutoplay();
+      });
+
+      // Handle window resize
+      window.addEventListener("resize", () => {
+        updateCarousel(false);
+      });
+
+      // Initialize and start
+      initCarousel();
+      startAutoplay();
+    </script>
+  </body>
+</html>

@@ -1,223 +1,3 @@
-# import os
-# import google.generativeai as genai
-# from dotenv import load_dotenv
-# import logging
-
-# # Set up logging
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
-
-# load_dotenv()
-
-# class GeminiService:
-#     def __init__(self):
-#         """Initialize Gemini service with API key from environment"""
-#         self.api_key = os.getenv("GEMINI_API_KEY")
-#         if not self.api_key:
-#             raise ValueError("GEMINI_API_KEY not found in environment variables")
-        
-#         # Configure Gemini
-#         genai.configure(api_key=self.api_key)
-        
-#         # Initialize the model (using Gemini 2.5 Flash - best price-performance)
-#         self.model = genai.GenerativeModel('gemini-2.5-flash')
-        
-#         logger.info("Gemini service initialized successfully")
-
-#     def generate_text(self, prompt: str, max_tokens: int = 150) -> str:
-#         """Generate text using Gemini API"""
-#         logger.info(f"Generating text for prompt: {prompt[:50]}...")
-        
-#         try:
-#             # Configure generation settings
-#             generation_config = genai.types.GenerationConfig(
-#                 max_output_tokens=max_tokens,
-#                 temperature=0.7,
-#                 top_p=1,
-#                 top_k=40
-#             )
-            
-#             response = self.model.generate_content(
-#                 prompt,
-#                 generation_config=generation_config
-#             )
-            
-#             generated_text = response.text.strip()
-#             logger.info(f"Generated text: {generated_text[:100]}...")
-#             return generated_text
-            
-#         except Exception as e:
-#             error_message = str(e).lower()
-            
-#             if "quota" in error_message or "limit" in error_message:
-#                 logger.error("Rate limit or quota exceeded")
-#                 return "Sorry, I'm currently experiencing high demand. Please try again in a moment."
-#             elif "api" in error_message and "key" in error_message:
-#                 logger.error("Authentication failed - check your API key")
-#                 return "Authentication error. Please check the API configuration."
-#             elif "invalid" in error_message:
-#                 logger.error(f"Invalid request: {str(e)}")
-#                 return "Invalid request. Please try rephrasing your question."
-#             else:
-#                 logger.error(f"Unexpected error: {str(e)}")
-#                 return f"Sorry, I encountered an error: {str(e)}"
-
-#     def generate_chat_response(self, prompt: str, conversation_history: list = None) -> str:
-#         """Generate conversational response with context"""
-#         logger.info(f"Generating chat response for: {prompt[:50]}...")
-        
-#         try:
-#             # Build conversation context
-#             if conversation_history:
-#                 # Convert conversation history to text format
-#                 context = "\n".join([
-#                     f"{'User' if msg.get('role') == 'user' else 'Assistant'}: {msg.get('content', '')}"
-#                     for msg in conversation_history
-#                 ])
-#                 full_prompt = f"{context}\nUser: {prompt}\nAssistant:"
-#             else:
-#                 full_prompt = prompt
-            
-#             generation_config = genai.types.GenerationConfig(
-#                 max_output_tokens=200,
-#                 temperature=0.8,
-#                 top_p=1,
-#                 top_k=40
-#             )
-            
-#             response = self.model.generate_content(
-#                 full_prompt,
-#                 generation_config=generation_config
-#             )
-            
-#             chat_response = response.text.strip()
-#             logger.info(f"Chat response: {chat_response[:100]}...")
-#             return chat_response
-            
-#         except Exception as e:
-#             logger.error(f"Error in chat response: {str(e)}")
-#             return self.generate_text(prompt)
-
-#     def summarize_document(self, text: str, summary_length: str = "medium") -> str:
-#         """Summarize a document"""
-#         logger.info(f"Summarizing document of length: {len(text)} characters")
-        
-#         # Determine max tokens based on summary length
-#         token_limits = {
-#             "short": 100,
-#             "medium": 200,
-#             "long": 400
-#         }
-#         max_tokens = token_limits.get(summary_length, 200)
-        
-#         try:
-#             prompt = f"""Please provide a {summary_length} summary of the following text:
-
-# {text}
-
-# Summary:"""
-            
-#             generation_config = genai.types.GenerationConfig(
-#                 max_output_tokens=max_tokens,
-#                 temperature=0.3,  # Lower temperature for more focused summaries
-#                 top_p=1,
-#                 top_k=20
-#             )
-            
-#             response = self.model.generate_content(
-#                 prompt,
-#                 generation_config=generation_config
-#             )
-            
-#             summary = response.text.strip()
-#             logger.info(f"Summary generated: {len(summary)} characters")
-#             return summary
-            
-#         except Exception as e:
-#             logger.error(f"Error in document summarization: {str(e)}")
-#             return f"Sorry, I couldn't summarize the document: {str(e)}"
-
-#     def generate_code(self, prompt: str) -> str:
-#         """Generate code based on prompt"""
-#         logger.info(f"Generating code for: {prompt[:50]}...")
-        
-#         try:
-#             code_prompt = f"""Generate clean, well-commented code for the following request:
-
-# {prompt}
-
-# Please provide only the code with brief comments:"""
-            
-#             generation_config = genai.types.GenerationConfig(
-#                 max_output_tokens=300,
-#                 temperature=0.2,  # Low temperature for more deterministic code
-#                 top_p=1,
-#                 top_k=20
-#             )
-            
-#             response = self.model.generate_content(
-#                 code_prompt,
-#                 generation_config=generation_config
-#             )
-            
-#             code = response.text.strip()
-#             logger.info(f"Code generated successfully")
-#             return code
-            
-#         except Exception as e:
-#             logger.error(f"Error in code generation: {str(e)}")
-#             return f"Sorry, I couldn't generate the code: {str(e)}"
-
-#     def get_smart_response(self, prompt: str, conversation_history: list = None) -> str:
-#         """Smart router that chooses the best response method"""
-#         prompt_lower = prompt.lower()
-        
-#         # Check for code-related requests
-#         code_keywords = ['code', 'python', 'function', 'class', 'import', 'def', 'print', 'variable', 'javascript', 'html', 'css']
-        
-#         # Check for summarization requests
-#         summary_keywords = ['summarize', 'summary', 'summarise', 'brief', 'overview', 'key points']
-        
-#         if any(keyword in prompt_lower for keyword in summary_keywords):
-#             return self.generate_chat_response(f"Please provide a summary: {prompt}", conversation_history)
-#         elif any(keyword in prompt_lower for keyword in code_keywords):
-#             return self.generate_code(prompt)
-#         else:
-#             return self.generate_chat_response(prompt, conversation_history)
-
-#     def get_answer(self, query: str) -> str:
-#         """Main method that your routes should call"""
-#         return self.get_smart_response(query)
-
-
-# # Initialize the service
-# try:
-#     ai_service = GeminiService()
-    
-#     # Main functions for backwards compatibility with your existing code
-#     def generate_text(prompt: str) -> str:
-#         return ai_service.generate_text(prompt)
-    
-#     def generate_chat_response(prompt: str) -> str:
-#         return ai_service.generate_chat_response(prompt)
-    
-#     def summarize_document(text: str) -> str:
-#         return ai_service.summarize_document(text)
-    
-#     def generate_code(prompt: str) -> str:
-#         return ai_service.generate_code(prompt)
-        
-# except Exception as e:
-#     logger.error(f"Failed to initialize Gemini service: {str(e)}")
-    
-#     # Fallback functions if Gemini fails
-#     def generate_text(prompt: str) -> str:
-#         return "Gemini service unavailable. Please check your API key."
-    
-#     def generate_chat_response(prompt: str) -> str:
-#         return "Gemini service unavailable. Please check your API key."
-
-
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -289,7 +69,7 @@ class GeminiService:
         try:
             # Configure generation settings
             generation_config = genai.types.GenerationConfig(
-                max_output_tokens=max_tokens,
+                # max_output_tokens=max_tokens,
                 temperature=0.7,
                 top_p=1,
                 top_k=40
@@ -375,9 +155,10 @@ class GeminiService:
                         full_prompt = "\n\n".join(context_parts)
                         
                         response = self.model.generate_content(
-                            full_prompt,
-                            generation_config=generation_config,
-                            safety_settings=safety_settings
+                            full_prompt
+                            # ,
+                            # generation_config=generation_config,
+                            # safety_settings=safety_settings
                         )
                         
                         chat_response = self._handle_response(response)
@@ -393,9 +174,10 @@ class GeminiService:
             # Fallback: Try without conversation history
             logger.info("Trying without conversation history...")
             response = self.model.generate_content(
-                prompt,
-                generation_config=generation_config,
-                safety_settings=safety_settings
+                prompt
+                # ,
+                # generation_config=generation_config,
+                # safety_settings=safety_settings
             )
             
             chat_response = self._handle_response(response)

@@ -119,102 +119,115 @@ async def extract_and_store_user_info(query: str):
     """Extract and store user information from messages"""
     query_lower = query.lower()
     
-    # Extract name
+    # Extract name - More specific patterns
     name_patterns = [
         r"my name is (\w+)",
-        r"i'm (\w+)",
-        r"i am (\w+)",
+        r"i'm (\w+)(?:\s+and|\s*,|\s*\.|\s+here)",  # Followed by specific words
+        r"i am (\w+)(?:\s+and|\s*,|\s*\.|\s+here)",
         r"call me (\w+)",
-        r"name's (\w+)"
+        r"name's (\w+)",
+        r"this is (\w+)(?:\s+speaking|\s+here)",
     ]
     
     for pattern in name_patterns:
         match = re.search(pattern, query_lower)
         if match:
             name = match.group(1).title()
-            db_manager.set_user_memory("name", name)
-            logger.info(f"Stored user name: {name}")
-            break
+            # Exclude common words that aren't names
+            excluded_words = ['a', 'an', 'the', 'student', 'teacher', 'person', 'user', 'here', 'back']
+            if name.lower() not in excluded_words:
+                db_manager.set_user_memory("name", name)
+                logger.info(f"Stored user name: {name}")
+                break
     
-    # Extract workplace
+    # Extract workplace - More specific
     workplace_patterns = [
-        r"i work at (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i work for (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i'm employed at (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"my job is at (.+?)(?:\.|,|$|\s+and|\s+but)"
+        r"i work at ([A-Z][A-Za-z0-9\s&]+?)(?:\.|,|$|\s+and|\s+in\s+)",
+        r"i work for ([A-Z][A-Za-z0-9\s&]+?)(?:\.|,|$|\s+and|\s+in\s+)",
+        r"i'm employed (?:at|by) ([A-Z][A-Za-z0-9\s&]+?)(?:\.|,|$|\s+and|\s+in\s+)",
+        r"i work at the ([A-Za-z0-9\s&]+?)(?:\.|,|$|\s+and|\s+in\s+)"
     ]
     
     for pattern in workplace_patterns:
-        match = re.search(pattern, query_lower)
+        match = re.search(pattern, query)  # Use original case
         if match:
             workplace = match.group(1).strip()
-            db_manager.set_user_memory("workplace", workplace)
-            logger.info(f"Stored workplace: {workplace}")
-            break
+            if len(workplace.split()) <= 8:  # Reasonable company name length
+                db_manager.set_user_memory("workplace", workplace)
+                logger.info(f"Stored workplace: {workplace}")
+                break
     
-    # Extract location
+    # Extract location - More specific
     location_patterns = [
-        r"i live in (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i'm from (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i'm in (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"my location is (.+?)(?:\.|,|$|\s+and|\s+but)"
+        r"i live in ([A-Z][A-Za-z\s,]+?)(?:\.|$|\s+and\s+)",
+        r"i'm from ([A-Z][A-Za-z\s,]+?)(?:\.|$|\s+and\s+)",
+        r"i'm in ([A-Z][A-Za-z\s,]+?)(?:\.|$|\s+and\s+)",
+        r"i'm based in ([A-Z][A-Za-z\s,]+?)(?:\.|$|\s+and\s+)",
+        r"(?:located|living) in ([A-Z][A-Za-z\s,]+?)(?:\.|$|\s+and\s+)"
     ]
     
     for pattern in location_patterns:
-        match = re.search(pattern, query_lower)
+        match = re.search(pattern, query)  # Use original case
         if match:
             location = match.group(1).strip()
-            db_manager.set_user_memory("location", location)
-            logger.info(f"Stored location: {location}")
-            break
+            if len(location.split()) <= 5:  # Reasonable location length
+                db_manager.set_user_memory("location", location)
+                logger.info(f"Stored location: {location}")
+                break
     
-    # Extract interests/hobbies
+    # Extract interests/hobbies - More specific
     interest_patterns = [
-        r"i like (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i love (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i enjoy (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i'm interested in (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"my hobby is (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i'm passionate about (.+?)(?:\.|,|$|\s+and|\s+but)"
+        r"i (?:like|love|enjoy) (?:to\s+)?([a-z]+(?:ing)?|[a-z\s]+?)(?:\s+and\s+|\s*,\s*|\s*\.\s*|$)",
+        r"i'm interested in ([a-z\s]+?)(?:\s+and\s+|\s*,\s*|\s*\.\s*|$)",
+        r"my (?:hobby|hobbies) (?:is|are|include) ([a-z\s,]+?)(?:\s+and\s+|\s*\.\s*|$)",
+        r"i'm passionate about ([a-z\s]+?)(?:\s+and\s+|\s*,\s*|\s*\.\s*|$)"
     ]
     
     for pattern in interest_patterns:
         match = re.search(pattern, query_lower)
         if match:
             interest = match.group(1).strip()
-            existing_interests = db_manager.get_user_memory("interests") or ""
-            if interest not in existing_interests.lower():
-                new_interests = f"{existing_interests}, {interest}" if existing_interests else interest
-                db_manager.set_user_memory("interests", new_interests)
-                logger.info(f"Added interest: {interest}")
-            break
+            # Exclude common verbs/words that aren't interests
+            excluded = ['a', 'an', 'the', 'to', 'be', 'being', 'do', 'doing', 'have', 'having']
+            if interest not in excluded and len(interest.split()) <= 5:
+                existing_interests = db_manager.get_user_memory("interests") or ""
+                if interest not in existing_interests.lower():
+                    new_interests = f"{existing_interests}, {interest}" if existing_interests else interest
+                    db_manager.set_user_memory("interests", new_interests)
+                    logger.info(f"Added interest: {interest}")
+                break
     
-    # Extract profession/job title
+    # Extract profession/job title - Fixed to avoid "a" as name
     job_patterns = [
-        r"i'm a (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i am a (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i work as a (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"my job is (.+?)(?:\.|,|$|\s+and|\s+but)",
-        r"i'm an? (.+?)(?:\.|,|$|\s+and|\s+but)"
+        r"i'm a ([a-z\s]+?)(?:\s+at\s+|\s+in\s+|\s+and\s+|\s*,\s*|\s*\.\s*|$)",
+        r"i am a ([a-z\s]+?)(?:\s+at\s+|\s+in\s+|\s+and\s+|\s*,\s*|\s*\.\s*|$)",
+        r"i work as an? ([a-z\s]+?)(?:\s+at\s+|\s+in\s+|\s+and\s+|\s*,\s*|\s*\.\s*|$)",
+        r"my (?:job|profession|role) is ([a-z\s]+?)(?:\s+at\s+|\s+in\s+|\s+and\s+|\s*,\s*|\s*\.\s*|$)",
     ]
     
     for pattern in job_patterns:
         match = re.search(pattern, query_lower)
         if match:
             job = match.group(1).strip()
-            # Filter out common words that aren't job titles
-            excluded_words = ['person', 'individual', 'human', 'user', 'student studying']
-            if not any(excluded in job.lower() for excluded in excluded_words):
+            # Filter out common words and single letters
+            excluded_words = ['person', 'individual', 'human', 'user', 'someone', 'a', 'an', 'the']
+            valid_jobs = ['student', 'teacher', 'developer', 'engineer', 'designer', 'manager', 
+                         'doctor', 'nurse', 'lawyer', 'consultant', 'analyst', 'writer',
+                         'software engineer', 'data scientist', 'product manager']
+            
+            # Check if it's a valid job or contains multiple words (likely a job title)
+            if (len(job) > 2 and job not in excluded_words and 
+                (job in valid_jobs or len(job.split()) >= 2 or job.endswith('er') or job.endswith('ist'))):
                 db_manager.set_user_memory("profession", job)
                 logger.info(f"Stored profession: {job}")
-            break
+                break
     
-    # Extract age
+    # Extract age - More specific
     age_patterns = [
-        r"i'm (\d+) years old",
-        r"i am (\d+) years old",
+        r"i'm (\d+)\s+years?\s+old",
+        r"i am (\d+)\s+years?\s+old",
         r"my age is (\d+)",
-        r"i'm (\d+)"
+        r"(\d+)\s+years?\s+old"
     ]
     
     for pattern in age_patterns:
@@ -224,8 +237,7 @@ async def extract_and_store_user_info(query: str):
             if 13 <= int(age) <= 120:  # Reasonable age range
                 db_manager.set_user_memory("age", age)
                 logger.info(f"Stored age: {age}")
-            break
-
+                break
 @router.get("/chat-history/{chat_id}")
 async def get_chat_history(chat_id: str):
     """Get chat history for a specific chat"""
